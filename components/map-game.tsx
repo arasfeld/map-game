@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type USState, states } from "@/lib/us-states";
+import { GameHeader } from "@/components/game-header";
 import { ResultsDialog } from "@/components/results-dialog";
 import { UsMap } from "@/components/us-map";
-import { Button } from "@/components/ui/button";
 
-interface GameState {
+export interface GameState {
   remainingStates: USState[];
   currentTarget: USState;
   attempts: Record<string, number>;
@@ -28,6 +28,7 @@ function formatTime(ms: number): string {
 
 export function MapGame() {
   const [game, setGame] = useState<GameState | null>(null);
+  const [showResults, setShowResults] = useState(false);
   const [wrongGuess, setWrongGuess] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const wrongGuessTimer = useRef<ReturnType<typeof setTimeout>>(null);
@@ -46,6 +47,7 @@ export function MapGame() {
   const startGame = useCallback(() => {
     const remaining = [...states];
     setElapsed(0);
+    setShowResults(false);
     setGame({
       remainingStates: remaining,
       currentTarget: pickRandom(remaining),
@@ -78,6 +80,7 @@ export function MapGame() {
         setWrongGuess(null);
 
         if (newRemaining.length === 0) {
+          setShowResults(true);
           setGame({
             ...game,
             remainingStates: newRemaining,
@@ -122,53 +125,38 @@ export function MapGame() {
     });
   }, [game]);
 
+  const closeResults = useCallback(() => setShowResults(false), []);
+
   const isGameOver = game?.endTime != null;
   const finalTime = game?.endTime ? game.endTime - game.startTime : elapsed;
 
   return (
-    <div className="flex w-full flex-col items-center gap-6">
-      <div className="flex min-h-10 items-center gap-4">
-        {!game ? (
-          <Button onClick={startGame} size="lg">
-            Start Game
-          </Button>
-        ) : (
-          <>
-            {!isGameOver && (
-              <>
-                <p className="text-xl font-medium">
-                  Find:{" "}
-                  <span className="font-bold">{game.currentTarget.name}</span>
-                </p>
-                <Button
-                  onClick={handleSkip}
-                  variant="ghost"
-                  size="sm"
-                  disabled={game.remainingStates.length <= 1}
-                >
-                  Skip
-                </Button>
-              </>
-            )}
-            <p className="text-muted-foreground tabular-nums">
-              {formatTime(finalTime)}
-            </p>
-          </>
-        )}
-      </div>
-      <UsMap
-        showTooltips={!game}
-        onStateClick={game && !isGameOver ? handleGuess : undefined}
-        guessedStates={game?.guessedStates}
-        stateAttempts={game?.attempts}
-        wrongGuess={wrongGuess}
+    <div className="flex h-full flex-col">
+      <GameHeader
+        game={game}
+        elapsed={elapsed}
+        isGameOver={isGameOver}
+        finalTime={finalTime}
+        startGame={startGame}
+        handleSkip={handleSkip}
+        formatTime={formatTime}
       />
+      <div className="flex flex-1 items-center justify-center p-4">
+        <UsMap
+          showTooltips={!game || isGameOver}
+          onStateClick={game && !isGameOver ? handleGuess : undefined}
+          guessedStates={game?.guessedStates}
+          stateAttempts={game?.attempts}
+          wrongGuess={wrongGuess}
+        />
+      </div>
 
       <ResultsDialog
-        open={isGameOver}
+        open={isGameOver && showResults}
         attempts={game?.attempts ?? {}}
         time={formatTime(finalTime)}
         onPlayAgain={startGame}
+        onClose={closeResults}
       />
     </div>
   );

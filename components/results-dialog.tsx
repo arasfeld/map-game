@@ -18,6 +18,7 @@ interface ResultsDialogProps {
   attempts: Record<string, number>;
   time: string;
   onPlayAgain: () => void;
+  onClose: () => void;
 }
 
 export function ResultsDialog({
@@ -25,9 +26,15 @@ export function ResultsDialog({
   attempts,
   time,
   onPlayAgain,
+  onClose,
 }: ResultsDialogProps) {
+  const counts = Object.values(attempts);
+  const totalGuesses = counts.reduce((sum, n) => sum + n, 0);
+  const misses = totalGuesses - counts.length;
+  const perfect = counts.filter((n) => n === 1).length;
+
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
         className="max-h-[80vh] overflow-y-auto sm:max-w-2xl"
         onPointerDownOutside={(e) => e.preventDefault()}
@@ -36,6 +43,23 @@ export function ResultsDialog({
           <DialogTitle>All states found!</DialogTitle>
           <DialogDescription>Completed in {time}</DialogDescription>
         </DialogHeader>
+        <div className="flex gap-4 text-sm">
+          <div className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full bg-green-500" />
+            <span>
+              {perfect} perfect
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full bg-red-500" />
+            <span>
+              {misses} {misses === 1 ? "miss" : "misses"}
+            </span>
+          </div>
+          <div className="text-muted-foreground">
+            {totalGuesses} total guesses
+          </div>
+        </div>
         <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
           {sortedStates.map((state) => {
             const count = attempts[state.id] ?? 1;
