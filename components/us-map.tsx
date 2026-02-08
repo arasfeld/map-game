@@ -1,6 +1,7 @@
 "use client";
 
 import { states } from "@/lib/us-states";
+import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
@@ -10,9 +11,16 @@ import {
 interface UsMapProps {
   showTooltips?: boolean;
   onStateClick?: (stateId: string) => void;
+  guessedStates?: Set<string>;
+  wrongGuess?: string | null;
 }
 
-export function UsMap({ showTooltips = true, onStateClick }: UsMapProps) {
+export function UsMap({
+  showTooltips = true,
+  onStateClick,
+  guessedStates,
+  wrongGuess,
+}: UsMapProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -20,14 +28,25 @@ export function UsMap({ showTooltips = true, onStateClick }: UsMapProps) {
       className="h-auto w-full max-w-5xl"
     >
       {states.map((state) => {
+        const isGuessed = guessedStates?.has(state.id);
+        const isWrong = wrongGuess === state.id;
+        const isClickable = onStateClick && !isGuessed;
+
         const pathElement = (
           <path
             id={state.id}
             d={state.path}
-            className="fill-transparent stroke-muted-foreground transition-colors hover:fill-muted"
+            className={cn(
+              "stroke-muted-foreground transition-colors",
+              isGuessed
+                ? "fill-primary/40"
+                : isWrong
+                  ? "fill-destructive/60"
+                  : "fill-transparent hover:fill-muted",
+            )}
             strokeWidth={0.75}
-            onClick={() => onStateClick?.(state.id)}
-            style={onStateClick ? { cursor: "pointer" } : undefined}
+            onClick={isClickable ? () => onStateClick(state.id) : undefined}
+            style={isClickable ? { cursor: "pointer" } : undefined}
           />
         );
 
