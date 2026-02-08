@@ -84,6 +84,23 @@ export function MapGame() {
     [game],
   );
 
+  const handleSkip = useCallback(() => {
+    if (!game || game.endTime || game.remainingStates.length <= 1) return;
+
+    const otherStates = game.remainingStates.filter(
+      (s) => s.id !== game.currentTarget.id,
+    );
+
+    if (wrongGuessTimer.current) clearTimeout(wrongGuessTimer.current);
+    setWrongGuess(null);
+
+    setGame({
+      ...game,
+      remainingStates: [...otherStates, game.currentTarget],
+      currentTarget: pickRandom(otherStates),
+    });
+  }, [game]);
+
   const isGameOver = game?.endTime != null;
 
   return (
@@ -101,9 +118,20 @@ export function MapGame() {
             </Button>
           </div>
         ) : (
-          <p className="text-xl font-medium">
-            Find: <span className="font-bold">{game.currentTarget.name}</span>
-          </p>
+          <>
+            <p className="text-xl font-medium">
+              Find:{" "}
+              <span className="font-bold">{game.currentTarget.name}</span>
+            </p>
+            <Button
+              onClick={handleSkip}
+              variant="ghost"
+              size="sm"
+              disabled={game.remainingStates.length <= 1}
+            >
+              Skip
+            </Button>
+          </>
         )}
       </div>
       <UsMap
