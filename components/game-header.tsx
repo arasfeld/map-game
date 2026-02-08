@@ -12,13 +12,6 @@ interface GameHeaderProps {
   formatTime: (ms: number) => string;
 }
 
-function getMissesColor(misses: number) {
-  if (misses === 0) return "text-green-500";
-  if (misses <= 5) return "text-yellow-500";
-  if (misses <= 15) return "text-orange-500";
-  return "text-red-500";
-}
-
 export function GameHeader({
   game,
   isGameOver,
@@ -27,25 +20,13 @@ export function GameHeader({
   handleSkip,
   formatTime,
 }: GameHeaderProps) {
-  const totalAttempts = game
-    ? Object.values(game.attempts).reduce((sum, n) => sum + n, 0)
-    : 0;
-  const misses = totalAttempts - (game?.guessedStates.size ?? 0);
-
   return (
     <header className="flex h-14 shrink-0 items-center border-b px-4">
       <div className="flex w-40 items-center gap-3">
         {game && (
-          <>
-            <span className="text-muted-foreground rounded-md bg-muted px-2.5 py-1 font-mono text-sm tabular-nums">
-              {formatTime(finalTime)}
-            </span>
-            <span
-              className={`font-mono text-sm tabular-nums ${getMissesColor(misses)}`}
-            >
-              {misses} {misses === 1 ? "miss" : "misses"}
-            </span>
-          </>
+          <span className="text-muted-foreground rounded-md bg-muted px-2.5 py-1 font-mono text-sm tabular-nums">
+            {formatTime(finalTime)}
+          </span>
         )}
       </div>
       <div className="flex flex-1 items-center justify-center gap-3">
