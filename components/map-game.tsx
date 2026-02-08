@@ -110,6 +110,7 @@ export function MapGame() {
         showTooltips={!game}
         onStateClick={game && !isGameOver ? handleGuess : undefined}
         guessedStates={game?.guessedStates}
+        stateAttempts={game?.attempts}
         wrongGuess={wrongGuess}
       />
     </div>

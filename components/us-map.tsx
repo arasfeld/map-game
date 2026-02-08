@@ -12,13 +12,22 @@ interface UsMapProps {
   showTooltips?: boolean;
   onStateClick?: (stateId: string) => void;
   guessedStates?: Set<string>;
+  stateAttempts?: Record<string, number>;
   wrongGuess?: string | null;
+}
+
+function getStateColor(attempts: number): string {
+  if (attempts <= 1) return "fill-green-500/50";
+  if (attempts <= 3) return "fill-yellow-500/50";
+  if (attempts <= 5) return "fill-orange-500/50";
+  return "fill-red-500/50";
 }
 
 export function UsMap({
   showTooltips = true,
   onStateClick,
   guessedStates,
+  stateAttempts,
   wrongGuess,
 }: UsMapProps) {
   return (
@@ -39,7 +48,7 @@ export function UsMap({
             className={cn(
               "stroke-muted-foreground transition-colors",
               isGuessed
-                ? "fill-primary/40"
+                ? getStateColor(stateAttempts?.[state.id] ?? 1)
                 : isWrong
                   ? "fill-destructive/60"
                   : "fill-transparent hover:fill-muted",
