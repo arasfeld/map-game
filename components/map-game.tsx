@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type USState, states } from "@/lib/us-states";
+import { ResultsDialog } from "@/components/results-dialog";
 import { UsMap } from "@/components/us-map";
 import { Button } from "@/components/ui/button";
 
@@ -18,13 +19,33 @@ function pickRandom(arr: USState[]): USState {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function formatTime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
 export function MapGame() {
   const [game, setGame] = useState<GameState | null>(null);
   const [wrongGuess, setWrongGuess] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
   const wrongGuessTimer = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Live timer — ticks every second while the game is active
+  const gameStartTime = game?.startTime;
+  const gameEndTime = game?.endTime;
+  useEffect(() => {
+    if (!gameStartTime || gameEndTime) return;
+    const interval = setInterval(() => {
+      setElapsed(Date.now() - gameStartTime);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [gameStartTime, gameEndTime]);
 
   const startGame = useCallback(() => {
     const remaining = [...states];
+    setElapsed(0);
     setGame({
       remainingStates: remaining,
       currentTarget: pickRandom(remaining),
@@ -102,6 +123,7 @@ export function MapGame() {
   }, [game]);
 
   const isGameOver = game?.endTime != null;
+  const finalTime = game?.endTime ? game.endTime - game.startTime : elapsed;
 
   return (
     <div className="flex w-full flex-col items-center gap-6">
@@ -110,27 +132,27 @@ export function MapGame() {
           <Button onClick={startGame} size="lg">
             Start Game
           </Button>
-        ) : isGameOver ? (
-          <div className="flex items-center gap-4">
-            <p className="text-xl font-medium">All states found!</p>
-            <Button onClick={startGame} variant="outline">
-              Play Again
-            </Button>
-          </div>
         ) : (
           <>
-            <p className="text-xl font-medium">
-              Find:{" "}
-              <span className="font-bold">{game.currentTarget.name}</span>
+            {!isGameOver && (
+              <>
+                <p className="text-xl font-medium">
+                  Find:{" "}
+                  <span className="font-bold">{game.currentTarget.name}</span>
+                </p>
+                <Button
+                  onClick={handleSkip}
+                  variant="ghost"
+                  size="sm"
+                  disabled={game.remainingStates.length <= 1}
+                >
+                  Skip
+                </Button>
+              </>
+            )}
+            <p className="text-muted-foreground tabular-nums">
+              {formatTime(finalTime)}
             </p>
-            <Button
-              onClick={handleSkip}
-              variant="ghost"
-              size="sm"
-              disabled={game.remainingStates.length <= 1}
-            >
-              Skip
-            </Button>
           </>
         )}
       </div>
@@ -140,6 +162,13 @@ export function MapGame() {
         guessedStates={game?.guessedStates}
         stateAttempts={game?.attempts}
         wrongGuess={wrongGuess}
+      />
+
+      <ResultsDialog
+        open={isGameOver}
+        attempts={game?.attempts ?? {}}
+        time={formatTime(finalTime)}
+        onPlayAgain={startGame}
       />
     </div>
   );
