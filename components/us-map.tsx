@@ -1,4 +1,11 @@
+"use client";
+
 import { states } from "@/lib/us-states";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function UsMap() {
   return (
@@ -8,13 +15,17 @@ export function UsMap() {
       className="h-auto w-full max-w-5xl"
     >
       {states.map((state) => (
-        <path
-          key={state.id}
-          id={state.id}
-          d={state.path}
-          className="fill-transparent stroke-muted-foreground transition-colors hover:fill-muted"
-          strokeWidth={0.75}
-        />
+        <Tooltip key={state.id}>
+          <TooltipTrigger asChild>
+            <path
+              id={state.id}
+              d={state.path}
+              className="fill-transparent stroke-muted-foreground transition-colors hover:fill-muted"
+              strokeWidth={0.75}
+            />
+          </TooltipTrigger>
+          <TooltipContent>{state.name}</TooltipContent>
+        </Tooltip>
       ))}
     </svg>
   );
