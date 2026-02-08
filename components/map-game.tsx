@@ -141,7 +141,7 @@ export function MapGame() {
         handleSkip={handleSkip}
         formatTime={formatTime}
       />
-      <div className="flex flex-1 items-center justify-center p-4">
+      <div className="flex-1 overflow-hidden">
         <UsMap
           showTooltips={!game || isGameOver}
           onStateClick={game && !isGameOver ? handleGuess : undefined}
