@@ -1,5 +1,6 @@
+import { useMemo } from "react";
 import { getAttemptColors } from "@/lib/game-colors";
-import { states } from "@/lib/us-states";
+import type { Region } from "@/lib/us-states";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,25 +10,28 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const sortedStates = [...states].sort((a, b) =>
-  a.name.localeCompare(b.name),
-);
-
 interface ResultsDialogProps {
-  open: boolean;
+  activeStates: Region[];
   attempts: Record<string, number>;
-  time: string;
-  onPlayAgain: () => void;
   onClose: () => void;
+  onPlayAgain: () => void;
+  open: boolean;
+  time: string;
 }
 
 export function ResultsDialog({
-  open,
+  activeStates,
   attempts,
-  time,
-  onPlayAgain,
   onClose,
+  onPlayAgain,
+  open,
+  time,
 }: ResultsDialogProps) {
+  const sortedStates = useMemo(
+    () => [...activeStates].sort((a, b) => a.name.localeCompare(b.name)),
+    [activeStates],
+  );
+
   const counts = Object.values(attempts);
   const totalGuesses = counts.reduce((sum, n) => sum + n, 0);
   const misses = totalGuesses - counts.length;
@@ -46,9 +50,7 @@ export function ResultsDialog({
         <div className="flex gap-4 text-sm">
           <div className="flex items-center gap-1.5">
             <span className="size-2.5 rounded-full bg-green-500" />
-            <span>
-              {perfect} perfect
-            </span>
+            <span>{perfect} perfect</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="size-2.5 rounded-full bg-red-500" />

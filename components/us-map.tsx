@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import {
-  TransformComponent,
-  TransformWrapper,
-} from "react-zoom-pan-pinch";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { Scan } from "lucide-react";
 import { getAttemptColors } from "@/lib/game-colors";
-import { states } from "@/lib/us-states";
+import { getActiveStates, type GameSettings } from "@/lib/game-settings";
+import {
+  DIVIDER_PATH_ASSOCIATED_STATES,
+  DIVIDER_PATH_HAWAII,
+  DIVIDER_PATH_TERRITORIES,
+} from "@/lib/us-states";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,22 +18,47 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+const DIVIDER_PATH_CLASS = "fill-none stroke-muted-foreground";
+const STROKE_WIDTH = 0.5;
+const VIEWBOX_FULL = "435 428 665 432";
+const VIEWBOX_STATES = "435 428 572 432";
+
 interface UsMapProps {
-  showTooltips?: boolean;
-  onStateClick?: (stateId: string) => void;
   guessedStates?: Set<string>;
+  onStateClick?: (stateId: string) => void;
+  settings: GameSettings;
+  showTooltips?: boolean;
   stateAttempts?: Record<string, number>;
   wrongGuess?: string | null;
 }
 
 export function UsMap({
-  showTooltips = true,
-  onStateClick,
   guessedStates,
+  onStateClick,
+  settings,
+  showTooltips = true,
   stateAttempts,
   wrongGuess,
 }: UsMapProps) {
   const [zoomed, setZoomed] = useState(false);
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    pointerDownRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const handleStateClick = useCallback(
+    (stateId: string, e: React.MouseEvent) => {
+      const down = pointerDownRef.current;
+      if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) {
+        return; // User was panning/dragging, not clicking
+      }
+      onStateClick?.(stateId);
+    },
+    [onStateClick],
+  );
+
+  const visibleStates = useMemo(() => getActiveStates(settings), [settings]);
 
   return (
     <TransformWrapper
@@ -56,10 +83,32 @@ export function UsMap({
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              viewBox="52 30 1045 732"
+              viewBox={
+                settings.includeAssociatedStates ? VIEWBOX_FULL : VIEWBOX_STATES
+              }
               className="h-auto max-h-full w-auto max-w-full"
+              onPointerDown={handlePointerDown}
             >
-              {states.map((state) => {
+              <path
+                d={DIVIDER_PATH_HAWAII}
+                className={DIVIDER_PATH_CLASS}
+                strokeWidth={STROKE_WIDTH}
+              />
+              {settings.includeTerritories && (
+                <path
+                  d={DIVIDER_PATH_TERRITORIES}
+                  className={DIVIDER_PATH_CLASS}
+                  strokeWidth={STROKE_WIDTH}
+                />
+              )}
+              {settings.includeAssociatedStates && (
+                <path
+                  d={DIVIDER_PATH_ASSOCIATED_STATES}
+                  className={DIVIDER_PATH_CLASS}
+                  strokeWidth={STROKE_WIDTH}
+                />
+              )}
+              {visibleStates.map((state) => {
                 const isGuessed = guessedStates?.has(state.id);
                 const isWrong = wrongGuess === state.id;
                 const isClickable = onStateClick && !isGuessed;
@@ -78,7 +127,9 @@ export function UsMap({
                     )}
                     strokeWidth={0.75}
                     onClick={
-                      isClickable ? () => onStateClick(state.id) : undefined
+                      isClickable
+                        ? (e) => handleStateClick(state.id, e)
+                        : undefined
                     }
                     style={isClickable ? { cursor: "pointer" } : undefined}
                   />

@@ -1,21 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type USState, states } from "@/lib/us-states";
+import {
+  type GameSettings,
+  defaultSettings,
+  getActiveStates,
+} from "@/lib/game-settings";
+import type { Region } from "@/lib/us-states";
 import { GameHeader } from "@/components/game-header";
 import { ResultsDialog } from "@/components/results-dialog";
 import { UsMap } from "@/components/us-map";
 
 export interface GameState {
-  remainingStates: USState[];
-  currentTarget: USState;
+  remainingStates: Region[];
+  currentTarget: Region;
   attempts: Record<string, number>;
   guessedStates: Set<string>;
   startTime: number;
   endTime: number | null;
 }
 
-function pickRandom(arr: USState[]): USState {
+function pickRandom(arr: Region[]): Region {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
@@ -28,6 +33,7 @@ function formatTime(ms: number): string {
 
 export function MapGame() {
   const [game, setGame] = useState<GameState | null>(null);
+  const [settings, setSettings] = useState<GameSettings>(defaultSettings);
   const [showResults, setShowResults] = useState(false);
   const [wrongGuess, setWrongGuess] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -45,7 +51,7 @@ export function MapGame() {
   }, [gameStartTime, gameEndTime]);
 
   const startGame = useCallback(() => {
-    const remaining = [...states];
+    const remaining = [...getActiveStates(settings)];
     setElapsed(0);
     setShowResults(false);
     setGame({
@@ -56,7 +62,7 @@ export function MapGame() {
       startTime: Date.now(),
       endTime: null,
     });
-  }, []);
+  }, [settings]);
 
   const handleGuess = useCallback(
     (stateId: string) => {
@@ -133,30 +139,33 @@ export function MapGame() {
   return (
     <div className="flex h-full flex-col">
       <GameHeader
-        game={game}
-        elapsed={elapsed}
-        isGameOver={isGameOver}
         finalTime={finalTime}
-        startGame={startGame}
-        handleSkip={handleSkip}
         formatTime={formatTime}
+        game={game}
+        isGameOver={isGameOver}
+        settings={settings}
+        onSettingsChange={setSettings}
+        onSkip={handleSkip}
+        onStartGame={startGame}
       />
       <div className="flex-1 overflow-hidden">
         <UsMap
-          showTooltips={!game || isGameOver}
-          onStateClick={game && !isGameOver ? handleGuess : undefined}
           guessedStates={game?.guessedStates}
+          onStateClick={game && !isGameOver ? handleGuess : undefined}
+          settings={settings}
+          showTooltips={!game || isGameOver}
           stateAttempts={game?.attempts}
           wrongGuess={wrongGuess}
         />
       </div>
 
       <ResultsDialog
-        open={isGameOver && showResults}
+        activeStates={getActiveStates(settings)}
         attempts={game?.attempts ?? {}}
-        time={formatTime(finalTime)}
-        onPlayAgain={startGame}
         onClose={closeResults}
+        onPlayAgain={startGame}
+        open={isGameOver && showResults}
+        time={formatTime(finalTime)}
       />
     </div>
   );
